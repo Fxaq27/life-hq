@@ -489,6 +489,28 @@ button.ring:active{transform:scale(.85)}
 a.sumchip{text-decoration:none}
 @media (max-width:980px){.c-months,.c-top,.c-mnote{grid-column:span 12}}
 
+/* ---- C5: tick circles, undo, money range ---- */
+.li>button.ring{width:24px;height:24px}
+.li.got .t{text-decoration:line-through;opacity:.5}.li.got .ring{background:#23A873;border-color:#23A873}
+.item>button.ring{width:26px;height:26px;margin:7px 7px 0}
+.item.got h4{text-decoration:line-through;opacity:.5}.item.got .ring{background:#23A873;border-color:#23A873}
+.li.leaving,.item.leaving{opacity:0;transform:translateX(18px);transition:opacity .4s var(--ease),transform .4s var(--ease)}
+.toast.undo{pointer-events:auto;display:flex;align-items:center;gap:14px;padding:8px 8px 8px 20px}
+.toast button{font:600 14px var(--th);border:0;border-radius:999px;padding:7px 14px;background:#FFE08A;color:#1E1F24;cursor:pointer}
+.cm.cal{color:var(--ink3)}
+.rtabs{background:rgba(27,26,23,.07)}
+.rtabs button{color:var(--ink2)}
+.rtabs button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.bars7{display:flex;align-items:flex-end;gap:10px;height:150px;margin-top:22px}
+.bars7 .b7{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:6px;min-width:0}
+.bars7 .b7 i{display:block;width:100%;max-width:44px;border-radius:10px 10px 4px 4px;background:var(--ink);min-height:4px}
+.bars7 .b7 i.none{background:repeating-linear-gradient(45deg,rgba(27,26,23,.13) 0 3px,transparent 3px 6px);height:100%;opacity:.55}
+.bars7 .b7 i.closed{background:rgba(27,26,23,.06);height:100%}
+.bars7 .b7 em{font:600 12px var(--num);font-style:normal;color:var(--ink2);white-space:nowrap}
+.bars7 .b7 span{font-size:12px;color:var(--ink3);white-space:nowrap}
+.bars30 i.closed{background:rgba(27,26,23,.06);height:100%}
+@media (max-width:980px){.c-months{order:4}.c-top{order:5}.c-mnote{order:6}}
+
 /* ---- web app shell: loading + passcode gate + who-am-I ---- */
 .gate{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:24px;background:transparent;transition:opacity .5s var(--ease),visibility .5s}
 .gate.gone{opacity:0;visibility:hidden}
@@ -705,19 +727,20 @@ function pending(i){
 function doing(i){
   var open=DATA.openTasks||[], done=Number(DATA.doneThisWeek)||0, tot=open.length+done, w=tot?Math.round(done/tot*100):0;
   var li=open.map(function(t){var who=t.assignee||t.proposed_assignee, on=t.status==='in_progress';
-    return '<div class="li">'+av(who)+'<span class="t">'+esc(t.title)+'</span><span class="status'+(on?' on':'')+'">'+I(on?'play':'ok')+(on?'กำลังทำ':'รับแล้ว')+'</span></div>';}).join('');
+    return '<div class="li">'+(ME?'<button type="button" class="ring" data-done="'+esc(t.id)+'" aria-label="เสร็จแล้ว: '+esc(t.title)+'"></button>':'')+av(who)+'<span class="t">'+esc(t.title)+'</span><span class="status'+(on?' on':'')+'">'+I(on?'play':'ok')+(on?'กำลังทำ':'รับแล้ว')+'</span></div>';}).join('');
   return '<section class="card lav solid c-doing rise" style="--i:'+i+'" aria-labelledby="h-doing"><div class="doing-in"><div>'+
     '<div class="head"><h2 id="h-doing"><span class="ic">'+I('pen')+'</span>กำลังทำ <span class="count">'+open.length+'</span></h2></div>'+
     '<div class="prog"><span>'+I('spark')+'เสร็จแล้วสัปดาห์นี้</span><b>'+done+' / '+tot+'</b></div><div class="bar2"><i style="--w:'+w+'%"></i></div>'+
-    '<p class="doing-note">งานที่ตอบรับแล้วจะย้ายมาอยู่ตรงนี้ บอก Hermes ว่าเสร็จเมื่อไหร่ แถบจะขยับเอง</p></div>'+
+    '<p class="doing-note">'+(ME?'แตะวงกลมเมื่อทำเสร็จ งานจะหายจากหน้านี้':'งานที่ตอบรับแล้วจะย้ายมาอยู่ตรงนี้ บอก Hermes ว่าเสร็จเมื่อไหร่ แถบจะขยับเอง')+'</p></div>'+
     (open.length?'<div>'+li+'</div>':empty('ยังไม่มีงานที่รับไว้'))+'</div></section>';
 }
 
 function cakes(i){
   var cs=(DATA.cakesSoon||[]).slice().sort(function(a,b){return (pd(a.pickup_at||a.production_due_at)||0)-(pd(b.pickup_at||b.production_due_at)||0);});
   var html=cs.map(function(c){var s=c.pickup_at||c.production_due_at, d=pd(s), p=prep(c), soon=d&&dd(TODAY,d)<=1;
-    return '<div class="item"><span class="ic">'+I('cake')+'</span><div style="min-width:0"><h4>'+esc((c.cake_name||'เค้ก')+(c.flavour?' '+c.flavour:''))+(c.quantity?' × '+esc(c.quantity):'')+'</h4>'+
-      '<p class="cm">'+I('truck')+(d?'ส่ง '+sd(d)+(timed(s)?' · '+hm(d):''):'ยังไม่มีวันส่ง')+'</p><p class="cm'+(p.warn?' warn':' good')+'">'+I(p.warn?'alert':'ok')+esc(p.text)+'</p></div>'+
+    var fromCal=/จากปฏิทิน/.test(c.notes||'');
+    return '<div class="item">'+(ME&&c.id?'<button type="button" class="ring" data-cake="'+esc(c.id)+'" aria-label="เสร็จแล้ว: '+esc(c.cake_name||'เค้ก')+'"></button>':'<span class="ic">'+I('cake')+'</span>')+'<div style="min-width:0"><h4>'+esc((c.cake_name||'เค้ก')+(c.flavour?' '+c.flavour:''))+(c.quantity?' × '+esc(c.quantity):'')+'</h4>'+
+      '<p class="cm">'+I('truck')+(d?'ส่ง '+sd(d)+(timed(s)?' · '+hm(d):''):'ยังไม่มีวันส่ง')+'</p>'+(fromCal?'<p class="cm cal">'+I('cal')+'จากปฏิทิน</p>':'<p class="cm'+(p.warn?' warn':' good')+'">'+I(p.warn?'alert':'ok')+esc(p.text)+'</p>')+'</div>'+
       (d?'<span class="tag'+(soon?' hot':'')+'">'+I(soon?'fire':'clock')+rel(d)+'</span>':'')+'</div>';}).join('');
   return '<section class="card glass c-cake rise" id="cakes" style="--i:'+i+'" aria-labelledby="h-cake">'+
     '<div class="head"><h2 id="h-cake"><span class="ic">'+I('cake')+'</span>ออเดอร์เค้ก <span class="count">'+cs.length+'</span></h2>'+
@@ -757,18 +780,26 @@ function moneyHello(){
   return '<div><h1><span class="tod">'+I('trend')+'</span>เงินร้าน</h1><p>'+I('cal')+'ข้อมูลถึง '+sd(TODAY)+' · ตัวเลขประมาณ</p></div>'+
     '<div class="summary"><a class="sumchip" href="index.html">'+I('home')+'กลับหน้าแรก</a></div>';
 }
-function moneyPage(){
-  var days=DATA.daily||[], rep=days.filter(function(d){return d.total!=null&&d.total!=='';});
+function moneyIn(n){
+  var days=(DATA.daily||[]).slice(-n), rep=days.filter(function(d){return d.total!=null&&d.total!=='';});
   var total=rep.reduce(function(a,d){return a+Number(d.total);},0);
   var max=Math.max.apply(null,rep.map(function(d){return Number(d.total);}).concat([1]));
-  var bars=days.map(function(d){var dt=pd(d.date), isT=dt&&dd(TODAY,dt)===0;
-    if(d.total==null||d.total==='') return '<i class="none" title="'+sd(dt)+' · ไม่มีเงินเข้า"></i>';
-    return '<i class="'+(isT?'today':'')+'" style="height:'+Math.max(3,Math.round(Number(d.total)/max*100))+'%" title="'+sd(dt)+' · $'+money(d.total)+'"></i>';}).join('');
-  var first=days.length?pd(days[0].date):TODAY;
-  var c1='<section class="card glass c-sales rise" id="m-in" style="--i:1" aria-labelledby="h-in">'+
-    '<div class="head"><h2 id="h-in"><span class="ic">'+I('trend')+'</span>เงินเข้า 30 วัน</h2></div>'+
-    '<div class="big num"><small>A$</small>'+money(total)+'</div><p class="sub">'+I('avg')+(rep.length?'เฉลี่ย $'+money(total/rep.length)+' ต่อวันที่มีเงินเข้า · '+rep.length+' วัน':'ยังไม่มีข้อมูล')+'</p>'+
-    '<div class="bars30" role="img" aria-label="เงินเข้ารายวัน 30 วัน">'+bars+'</div><div class="x30"><span>'+sd(first)+'</span><span>วันนี้</span></div></section>';
+  function kind(d){var dt=pd(d.date);if(d.total!=null&&d.total!=='')return 'v';if(dt&&dd(TODAY,dt)===0)return 'wait';if(dt&&dt.getDay()===0)return 'closed';return 'none';}
+  var bars;
+  if(n===7){bars='<div class="bars7" role="img" aria-label="ยอดขายรายวัน 7 วัน">'+days.map(function(d){var dt=pd(d.date),k=kind(d),lb=dd(TODAY,dt)===0?'วันนี้':DAY_S[dt.getDay()];
+      if(k==='v') return '<div class="b7"><em>$'+money(d.total)+'</em><i style="height:'+Math.max(4,Math.round(Number(d.total)/max*82))+'%"></i><span>'+lb+'</span></div>';
+      return '<div class="b7"><em>'+(k==='closed'?'ปิด':k==='wait'?'รอยอด':'—')+'</em><i class="'+(k==='closed'?'closed':'none')+'" style="height:82%"></i><span>'+lb+'</span></div>';}).join('')+'</div>';}
+  else{bars='<div class="bars30" role="img" aria-label="ยอดขายรายวัน 30 วัน">'+days.map(function(d){var dt=pd(d.date),k=kind(d);
+      if(k==='v') return '<i style="height:'+Math.max(3,Math.round(Number(d.total)/max*100))+'%" title="'+sd(dt)+' · $'+money(d.total)+'"></i>';
+      return '<i class="'+(k==='closed'?'closed':'none')+'" title="'+sd(dt)+' · '+(k==='closed'?'ร้านปิด':k==='wait'?'รอยอดพรุ่งนี้':'ไม่มีข้อมูล')+'"></i>';}).join('')+
+      '</div><div class="x30"><span>'+sd(pd(days[0].date))+'</span><span>วันนี้</span></div>';}
+  return '<div class="head"><h2 id="h-in"><span class="ic">'+I('trend')+'</span>ยอดขาย</h2>'+
+    '<div class="tabs rtabs" role="group" aria-label="ช่วงเวลา"><button type="button" data-r="7" aria-pressed="'+(n===7)+'">7 วัน</button><button type="button" data-r="30" aria-pressed="'+(n===30)+'">30 วัน</button></div></div>'+
+    '<div class="big num"><small>A$</small>'+money(total)+'</div><p class="sub">'+I('avg')+(rep.length?'เฉลี่ย $'+money(total/rep.length)+' ต่อวันที่เปิดร้าน · '+rep.length+' วัน':'ยังไม่มีข้อมูล')+' · ยอดเข้าช้า 1 วัน</p>'+bars;
+}
+document.addEventListener('click',function(e){var b=e.target.closest('.rtabs button');if(!b)return;var sec=document.getElementById('m-in');if(sec)sec.innerHTML=moneyIn(+b.getAttribute('data-r'));});
+function moneyPage(){
+  var c1='<section class="card glass c-sales rise" id="m-in" style="--i:1" aria-labelledby="h-in">'+moneyIn(7)+'</section>';
   var ms=DATA.months||[], mmax=Math.max.apply(null,ms.map(function(m){return Math.max(m.income,m.expense);}).concat([1]));
   var mb=ms.map(function(m){return '<div class="mb" title="'+m.month+' · เข้า $'+money(m.income)+' · ออก $'+money(m.expense)+'"><i class="in" style="height:'+Math.max(2,Math.round(m.income/mmax*100))+'%"></i><i class="out" style="height:'+Math.max(2,Math.round(m.expense/mmax*100))+'%"></i></div>';}).join('');
   var mx=ms.map(function(m){var p=String(m.month).split('-');return '<span>'+MON_S[(+p[1]||1)-1]+'</span>';}).join('');
@@ -794,26 +825,36 @@ function toast(t){var el=document.getElementById('toast');if(!el){el=document.cr
   el.textContent=t;el.classList.add('on');clearTimeout(el._t);el._t=setTimeout(function(){el.classList.remove('on');},2600);}
 function recount(card){
   if(!card) return;
-  var pend=card.classList.contains('c-pending'), rows=card.querySelectorAll(pend?'#prow .row':'.si'), c=card.querySelector('h2 .count');
+  var pend=card.classList.contains('c-pending'), sel=pend?'#prow .row':card.classList.contains('c-doing')?'.li':card.classList.contains('c-cake')?'.item':'.si';
+  var rows=[].filter.call(card.querySelectorAll(sel),function(x){return !x.hidden;}), c=card.querySelector('h2 .count');
   if(c) c.textContent=rows.length;
   if(pend){var bs=card.querySelectorAll('.tabs button');for(var i=0;i<bs.length;i++){var f=bs[i].getAttribute('data-f'),n=0;
     for(var j=0;j<rows.length;j++) if(f==='all'||rows[j].getAttribute('data-to')===f) n++;
     var sp=bs[i].querySelector('.n'); if(sp) sp.textContent=n;}}
-  if(!rows.length){var box=card.querySelector(pend?'#prow':'.shop'); if(box) box.outerHTML=empty(pend?'ไม่มีงานค้างรับ ตอนนี้โล่งเลย':'ไม่มีของต้องซื้อ');}
+  if(!rows.length&&(pend||sel==='.si')){var box=card.querySelector(pend?'#prow':'.shop'); if(box) box.outerHTML=empty(pend?'ไม่มีงานค้างรับ ตอนนี้โล่งเลย':'ไม่มีของต้องซื้อ');}
 }
+var TICK={buy:['bought','unbuy','ซื้อแล้ว ✓','.si'],done:['done','undone','เสร็จแล้ว ✓','.li'],cake:['cakedone','cakeundo','เค้กเสร็จแล้ว ✓','.item']};
+function undoToast(text,fn){toast(text);var el=document.getElementById('toast');el.classList.add('undo');
+  var bt=document.createElement('button');bt.type='button';bt.textContent='ยกเลิก';bt.onclick=function(){el.classList.remove('on','undo');fn();};el.appendChild(bt);
+  clearTimeout(el._t);el._t=setTimeout(function(){el.classList.remove('on','undo');},4500);}
 document.addEventListener('click',function(e){
-  var b=e.target.closest('[data-act],[data-buy]'); if(!b) return;
+  var b=e.target.closest('[data-act],[data-buy],[data-done],[data-cake]'); if(!b) return;
   if(!window.LIFEHQ_ACT){toast('เปิดจากแอป Life HQ บนมือถือเพื่อกดปุ่มนี้');return;}
-  var buy=b.hasAttribute('data-buy'), act=buy?'bought':b.getAttribute('data-act'), id=buy?b.getAttribute('data-buy'):b.parentNode.getAttribute('data-id');
-  var row=b.closest(buy?'.si':'.row'), btns=row.querySelectorAll('button'), k;
-  for(k=0;k<btns.length;k++) btns[k].disabled=true;
-  if(buy) row.classList.add('got');
+  var kind=b.hasAttribute('data-act')?'act':b.hasAttribute('data-buy')?'buy':b.hasAttribute('data-done')?'done':'cake';
+  var cfg=TICK[kind], act=kind==='act'?b.getAttribute('data-act'):cfg[0], id=kind==='act'?b.parentNode.getAttribute('data-id'):b.getAttribute('data-'+kind);
+  var row=b.closest(kind==='act'?'.row':cfg[3]), card=row.closest('.card'), btns=row.querySelectorAll('button'), k;
+  function lock(on){for(k=0;k<btns.length;k++) btns[k].disabled=on;}
+  lock(true); if(kind!=='act') row.classList.add('got');
   window.LIFEHQ_ACT(act,id).then(function(){
-    toast({accept:'รับงานแล้ว ✓',decline:'ไม่รับงานนี้',defer:'เลื่อนไว้ก่อน',bought:'ซื้อแล้ว ✓'}[act]||'บันทึกแล้ว');
-    setTimeout(function(){row.classList.add('leaving');setTimeout(function(){var card=row.closest('.card');row.remove();recount(card);},420);},buy?500:0);
-  }).catch(function(){
-    toast('ยังบันทึกไม่ได้ ลองใหม่อีกครั้ง');row.classList.remove('got');for(k=0;k<btns.length;k++) btns[k].disabled=false;
-  });
+    if(kind==='act'){toast({accept:'รับงานแล้ว ✓',decline:'ไม่รับงานนี้',defer:'เลื่อนไว้ก่อน'}[act]||'บันทึกแล้ว');
+      row.classList.add('leaving');setTimeout(function(){row.remove();recount(card);},420);return;}
+    var gone=false;
+    setTimeout(function(){row.classList.add('leaving');setTimeout(function(){if(row.classList.contains('leaving')){row.hidden=true;gone=true;recount(card);}},420);},450);
+    undoToast(cfg[2],function(){
+      window.LIFEHQ_ACT(cfg[1],id).then(function(){row.hidden=false;row.classList.remove('leaving','got');lock(false);if(gone)recount(card);toast('ยกเลิกแล้ว');})
+        .catch(function(){toast('ยกเลิกไม่สำเร็จ ลองใหม่อีกครั้ง');});
+    });
+  }).catch(function(){toast('ยังบันทึกไม่ได้ ลองใหม่อีกครั้ง');row.classList.remove('got');lock(false);});
 });
 
 document.getElementById('hello').innerHTML=MODE==='money'?moneyHello():hello();
@@ -827,7 +868,7 @@ document.addEventListener('click',function(e){
   if(j){e.preventDefault();var el=document.getElementById(j.getAttribute('data-jump'));if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
     var navs=document.querySelectorAll('.nav a');for(var k=0;k<navs.length;k++)navs[k].setAttribute('aria-current',navs[k].getAttribute('data-jump')===j.getAttribute('data-jump')?'true':'false');
     return;}
-  var b=e.target.closest('.tabs button');
+  var b=e.target.closest('.tabs:not(.rtabs) button');
   if(b){var f=b.getAttribute('data-f'),bs=b.parentNode.querySelectorAll('button'),shown=0;
     for(var x=0;x<bs.length;x++)bs[x].setAttribute('aria-pressed',bs[x]===b?'true':'false');
     var rs=document.querySelectorAll('#prow .row');
